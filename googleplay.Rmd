@@ -19,7 +19,7 @@ library(lme4)
 library(lattice)
 library(gridExtra)
 #load data
-data<-read.csv("/Users/christinasun/Desktop/google/googleplaystore.csv")
+data<-read.csv("googleplaystore.csv")
 ```
 
 #Data cleaning
@@ -227,13 +227,10 @@ content_rating<-data.clean %>%
   summarize(Total.Reviews = sum(Reviews)) %>%
   arrange(-Total.Reviews)
 
+#set highcharter options
+options(highcharter.theme = hc_theme_smpl(tooltip = list(valueDecimals = 2)))
 
-highchart() %>%
-  hc_chart(type = "pyramid",labels = content_rating$Content.Rating, values = content_rating$Total.Reviews) %>%
-  hc_title(
-    text = "Number of reviews by Content Rating"
-  ) %>%
-  hc_add_theme(hc_theme_flat())
+hc<-content_rating %>% hchart("pyramid", hcaes(x = Content.Rating, y = Total.Reviews), name = "Number of total reviews by content rating")
 ```
 
 #Genres
@@ -360,7 +357,7 @@ newdata<-cbind(log_installs,log_reviews,data1)
 #Here I only analysis those 'Type' == "Free",which has a larger proportion.
 newdata<-subset(newdata, Type == "Free")
 
-
+#'log_reviews' vs 'log_installs'
 ggplot(data = newdata)+
   aes(log_reviews,log_installs)+
   geom_point(aes(color = Category),alpha = 0.8)+
@@ -368,7 +365,7 @@ ggplot(data = newdata)+
   geom_smooth(aes(color = Category),method = "lm",se=F)+
   facet_wrap(~Content.Rating)
 
-
+#'log_reviews' vs 'Size'
 ggplot(data = newdata)+
   aes(log_reviews,Size)+
   geom_point(aes(color = Category),alpha = 0.8)+
@@ -376,7 +373,7 @@ ggplot(data = newdata)+
   geom_smooth(aes(color = Category),method = "lm",se=F)+
   facet_wrap(~Content.Rating)
 
-
+#'log_reviews' vs 'Rating'
 ggplot(data = newdata)+
   aes(log_reviews,Rating)+
   geom_point(aes(color = Category),alpha = 0.8)+
