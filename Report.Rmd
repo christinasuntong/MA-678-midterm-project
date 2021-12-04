@@ -1,0 +1,51 @@
+---
+title: "Report of MA678 Midterm Project"
+author: "Tong Sun"
+date: "12/4/2021"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+library(tidyverse)
+library(highcharter)
+library(lubridate)
+library(stringr)
+library(xts)
+library(lme4)
+library(lattice)
+library(gridExtra)
+data<-read.csv("googleplaystore.csv")
+```
+
+## Abstract
+
+Google Play is the official app store of Android, Google's mobile platform. It allows people to view applications and load of content before downloading anything on their devices. The Play Store apps data has enormous potential to drive app-making businesses to success. But there still are some apps which have majority of reviews with fewer installs. So here a question comes out -- what is the relationship between numbers of reviews and installs? I used several factors and set up a multilevel model to answer this question, making some suggestions for future app-making businesses. Additionally, it indexed important information about Android apps. The model shows that the number of reviews is slightly different between categories. This report consists 4 main parts: Introduction, Method, Result and Discussion.
+
+##Introduction
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
