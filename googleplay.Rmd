@@ -1,0 +1,428 @@
+---
+title: "google"
+author: "Christina"
+date: "11/19/2021"
+output: html_document
+---
+#Load packages and data
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message = FALSE,
+	warning = FALSE)
+#load packages
+library(tidyverse)
+library(highcharter)
+library(lubridate)
+library(stringr)
+library(xts)
+library(lme4)
+library(lattice)
+library(gridExtra)
+#load data
+data<-read.csv("/Users/christinasun/Desktop/google/googleplaystore.csv")
+```
+
+#Data cleaning
+
+```{r}
+#Check the types of data and variables
+class(data)
+str(data)
+#Change factor variables to be numeric.
+data.clean<-data %>%
+  mutate(
+    #eliminate some characters to transform 'Installs' to numeric
+    Installs = gsub("\\+", "", as.character(Installs)),
+    Installs = as.numeric(gsub(",","",Installs)),
+    #eliminate M to transform 'Size' to numeric
+    Size = gsub("M", "", Size),
+    #replace cells with 'k' to '0' since it is < 1MB
+    Size = ifelse(grepl("k", Size), 0, as.numeric(Size)),
+    #transform reviews to numeric
+    Reviews = as.numeric(as.character(Reviews)),
+    #remove currency symbol from Price, change it to numeric
+    Price = as.numeric(gsub("\\$", "", as.character(Price))),
+    #change 'Last Updated' to date format
+    Last.Updated = mdy(Last.Updated),
+    #replace "Varies with device" to NA since it is unknown
+    Min.Android.Ver = gsub("Varies with device", NA, Android.Ver),
+    #keep only version number to one decimal
+    Min.Android.Ver = as.numeric(substr(Min.Android.Ver, start = 1, stop = 3)),
+    #drop old Android version column
+    Android.Ver = NULL
+  ) %>%
+  filter(
+    # two apps had type as 0 or NA,remove them
+    Type %in% c("Free", "Paid")
+  )
+str(data.clean)
+#Here only 'Category', 'Content.Rating', 'Genres' and 'Current.Ver' are character.'Last.Updated' is date type.Other variables are all numeric.
+```
+
+#EDA
+
+```{r}
+#check duplicate records
+nrow(data.clean %>%
+       distinct()) #The above should list 10841,so there are 485 rows duplicated.I'll remove them later.
+#NA analysis
+data.clean %>%
+  summarise_all(
+    funs(sum(is.na(.))) 
+  ) %>%
+  gather() %>%
+  #only show columns with NA
+  filter(value > 1) %>%
+  arrange(-value) %>%
+    hchart('column', hcaes(x = 'key', y = 'value', color = 'key')) %>%
+  hc_add_theme(hc_theme_elementary()) %>%
+  hc_title(text = "Columns with NA values")
+  #here we have three columns with NA values.Following I will take a closer look at them.
+
+#NA values in Size
+data %>%
+  filter(
+    Size %in% "Varies with device"
+  ) %>%
+  count() #From the data cleaning process,there are a total of 1695 applications with "Varies with device" which I transformed to NAs.So,that explains NAs in this column.
+
+#NA values in 'Rating'
+data.clean %>%
+  filter(is.na(Rating)) %>%
+  count(Installs) %>%
+  arrange(-n) %>%
+  hchart('column', hcaes(x = "Installs", y = "n")) %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_title(text = "Installations with no rating") #Most applications without rating have very few installs,which could make sense.
+
+#NA values in 'Minimum Android Version'
+data %>%
+  filter(
+    Android.Ver %in% "Varies with device"
+  ) %>%
+  count() #Same as above,with "Varies with device" label present.There were a total of 1362 applications with "Varies with device" which we transformed to NA.
+```
+
+#Category
+
+```{r}
+#virsualization of most popular category by number of reviews
+data.clean %>%
+  count(Category, Reviews) %>%
+  group_by(Category) %>%
+  summarize(
+    TotalReviews = sum(as.numeric(Reviews))
+  ) %>%
+  arrange(-TotalReviews) %>%
+  hchart('scatter', hcaes(x = "Category", y = "TotalReviews", size = "TotalReviews", color = "Category")) %>%
+  hc_add_theme(hc_theme_538()) %>%
+  hc_title(text = "Most popular categories (# of reviews)")
+```
+
+#Application size
+
+```{r}
+#Histogram plot of 'Size'
+hist(data.clean$Size)
+
+data.clean %>%
+  count(Size)  %>%
+  hchart('area', hcaes(x = "Size", y = "n")) %>%
+  hc_colors("#fb4901") %>%
+  hc_add_theme(hc_theme_ffx()) %>%
+  hc_title(text = "Distribution of application size(in MB)") #From both histogram and 'highcharter' plots,I find that there are more applications with small size.
+
+#application size range (in MB) by application type
+hcboxplot(x = data.clean$Size, var = data.clean$Type, outliers = TRUE, color = "#fb4901", fillColor = "lightblue") %>%
+  hc_chart(type = "column") %>%
+  hc_add_theme(hc_theme_ffx()) %>%
+  hc_title(text = "Application size range (in MB) by application type")
+```
+
+#Installs
+
+```{r}
+#Histogram plot of 'Installs'
+hist(data.clean$Installs)
+#divide the range of 'Installs' by groups of 10k
+installs<-data.clean %>%
+  group_by(
+    Installs.Group = cut(Installs, breaks = seq(0, 1000000000, by = 10000))
+  ) %>%
+  summarise(
+    n = n()
+  )
+#create a bar chart
+bp<-ggplot(installs, aes(x="", y=n, fill=Installs.Group))+
+  geom_bar(width = 1, stat = "identity")
+bp
+#create a pie chart
+pie<-bp + coord_polar("y", start = 0)
+pie
+```
+
+#Type
+
+```{r}
+#The total split between free and paid applications
+type<-data.clean %>%
+  count(Type) %>%
+  mutate(perc = round((n / sum(n)) *100)) %>%
+  arrange(desc(perc))
+
+hciconarray(type$Type, type$perc, icons = "android", size = 5) %>%
+  hc_title(text = "Percentage of paid vs free apps") #For every 100 applications,seven of them are free.
+
+#how much this ratio changes per category
+data.clean %>%
+  group_by(Category, Type) %>%
+  summarize(
+    n = n()
+  ) %>%
+  mutate(perc = round((n / sum(n))*100)) %>%
+  hchart('bar', hcaes(x = 'Category', y = 'perc', group = 'Type')) %>%
+  hc_plotOptions(series = list(stacking = 'normal')) %>%
+  hc_title(text = "Percentage of Free vs Paid by Category") %>%
+  hc_add_theme(hc_theme_flat())
+  #The 'medical' and 'personalization' categories have more paid apps than free.
+```
+
+
+#Price
+
+```{r}
+#Here I use median to see which category has most expensive apps
+data.clean %>%
+  filter(Type == "Paid") %>%
+  group_by(Category) %>%
+  summarize(
+    Price = median(Price)
+  ) %>%
+  arrange(-Price) %>%
+  hchart('treemap', hcaes(x = 'Category', value = 'Price', color = 'Price')) %>%
+  hc_add_theme(hc_theme_elementary()) %>%
+  hc_title(text = "Median price per category") #'Events' is the leader.
+  
+#how much money was spent per category(installs*price)
+data.clean %>%
+  filter(Type == "Paid") %>%
+  mutate(
+    Total.Paid = Price * Installs
+  ) %>%
+  group_by(Category) %>%
+  summarize(USD.Paid = sum(Total.Paid)) %>%
+  arrange(-USD.Paid) %>%
+  hchart('treemap', hcaes(x = 'Category', value = 'USD.Paid',
+                          color = 'USD.Paid')) %>%
+  hc_add_theme(hc_theme_elementary()) %>%
+  hc_title(text = "Total amount spent by category(installs*price)") #From the treemap above,I found that 'Family' is the category which has the highest revenue.Maybe this happened because there was a huge populatiry.
+```
+
+#Content Rating
+
+```{r}
+#installations by 'content rating'
+content_rating<-data.clean %>%
+  group_by(Content.Rating) %>%
+  summarize(Total.Reviews = sum(Reviews)) %>%
+  arrange(-Total.Reviews)
+
+
+highchart() %>%
+  hc_chart(type = "pyramid",labels = content_rating$Content.Rating, values = content_rating$Total.Reviews) %>%
+  hc_title(
+    text = "Number of reviews by Content Rating"
+  ) %>%
+  hc_add_theme(hc_theme_flat())
+```
+
+#Genres
+
+```{r}
+unique(data.clean$Genres) #there are 119 unique "Genres" in the data set.
+#the most popular 'Genres' by number of reviews
+genres<-data.clean %>%
+  group_by(Genres) %>%
+  summarize(Total.Reviews = sum(Reviews)) %>%
+  arrange(-Total.Reviews)
+
+highchart() %>%
+  hc_chart(type = "column",
+           options3d = list(enabled = TRUE, alpha = 15, beta = 15)) %>%
+  hc_xAxis(categories = genres$Genres) %>%
+  hc_add_series(data = genres$Total.Reviews, name = "Total.Reviews") %>%
+  hc_add_theme(hc_theme_smpl()) %>%
+  hc_title(
+    text = "Number of Reviews by Genre (all apps)"
+  ) %>%
+  hc_chart(
+    borderColor = '#EBBA95',
+    borderRadius = 10,
+    borderWidth = 1,
+    backgroundColor = list(
+      linearGradient = c(0,0,500,500), stops = list(
+        list(0, 'rgb(255,255,255)'),
+        list(1, 'rgb(200,200,255)')
+      )
+    )
+  )
+#'Communication' is the most popular one, by number of reviews.
+#top 10 communication apps
+data.clean %>%
+  select(App, Reviews) %>%
+  arrange(-Reviews) %>%
+  head(10) #'Facebook' and 'Instagram' have more reviews,which makes sense.
+  
+##The top 10 paid and free apps, by genre.
+#'Paid'
+paid<-data.clean %>% filter(Type == "Paid") %>% head(10)
+
+highchart() %>%
+  hc_chart(type = "column",
+           options3d = list(enabled = TRUE, alpha = 15, beta = 15)) %>%
+  hc_xAxis(categories = paid$Genres) %>%
+  hc_add_series(data = paid$Reviews, name = "Total.Reviews") %>%
+  hc_add_theme(hc_theme_smpl()) %>%
+  hc_title(
+    text = "Top 10 number of reviews by genre"
+  ) %>%
+  hc_subtitle(
+    text = "paid apps only"
+  )
+#'Free'
+free<-data.clean %>% filter(Type == "Free") %>% head(10)
+
+highchart() %>%
+  hc_chart(type = "column",
+           options3d = list(enabled = TRUE, alpha = 15, beta = 15)) %>%
+  hc_xAxis(categories = free$Genres) %>%
+  hc_add_series(data = free$Reviews, name = "Total.Reviews") %>%
+  hc_add_theme(hc_theme_smpl()) %>%
+  hc_title(
+    text = "Top 10 number of reviews by genre"
+  ) %>%
+  hc_subtitle(
+    text = "free apps only"
+  )
+```
+#Last updated
+
+```{r}
+#when applications were last updated
+#get number of apps by last updated date
+updated<-data.clean %>%
+  count(Last.Updated)
+#Transform data into time series
+time_series<-xts(
+  updated$n, order.by = updated$Last.Updated
+)
+
+highchart(type = "stock") %>%
+  hc_title(text = "Last updated date") %>%
+  hc_subtitle(text = "Number of applications by date of last update") %>%
+  hc_add_series(time_series) %>%
+  hc_add_theme(hc_theme_gridlight())
+#Most applications have been updated within the last six months.
+```
+
+#Android Version
+
+```{r}
+# Minimum android version by number of reviews.
+data.clean %>%
+  filter(Min.Android.Ver > 0, Type %in% c("Free", "Paid")) %>%
+  group_by(as.factor(Min.Android.Ver), Type) %>%
+  rename(Minimum.Android.Version = "as.factor(Min.Android.Ver)") %>%
+  summarize(Total.Reviews = sum(Reviews)) %>%
+  hchart(
+    type = "heatmap", hcaes(x = Minimum.Android.Version, y = Type, value = Total.Reviews)
+  ) %>%
+  hc_title(text = "Minimum Android Version (by number of reviews)")
+```
+
+
+#Modeling
+```{r}
+#Drop NAs
+final.data<-na.omit(data.clean)
+#Checking NAs
+apply(X=final.data, MARGIN = 2,FUN = function(col) any(is.na(col))) #There is no NAs in data frame.
+#Drop duplicated rows
+data1<-final.data %>%
+       distinct()
+#Change 'Category' into factor
+data1$Category<-as.factor(data1$Category)
+#Make transform of 'Installs' & 'Reviews'
+log_installs<-log(data1$Installs)
+log_reviews<-log(data1$Reviews)
+newdata<-cbind(log_installs,log_reviews,data1)
+
+#Here I only analysis those 'Type' == "Free",which has a larger proportion.
+newdata<-subset(newdata, Type == "Free")
+
+
+ggplot(data = newdata)+
+  aes(log_reviews,log_installs)+
+  geom_point(aes(color = Category),alpha = 0.8)+
+  labs(title="grades of installs vs number of reviews",x="log(grades of installs)",y="log(number of reviews)")+
+  geom_smooth(aes(color = Category),method = "lm",se=F)+
+  facet_wrap(~Content.Rating)
+
+
+ggplot(data = newdata)+
+  aes(log_reviews,Size)+
+  geom_point(aes(color = Category),alpha = 0.8)+
+  labs(title="Size vs number of reviews",x="Size",y="log(number of reviews)")+
+  geom_smooth(aes(color = Category),method = "lm",se=F)+
+  facet_wrap(~Content.Rating)
+
+
+ggplot(data = newdata)+
+  aes(log_reviews,Rating)+
+  geom_point(aes(color = Category),alpha = 0.8)+
+  labs(title="Rating vs number of reviews",x="Rating",y="log(number of reviews)")+
+  geom_smooth(aes(color = Category),method = "lm",se=F)+
+  facet_wrap(~Content.Rating)
+
+ggplot(data.frame(newdata$log_reviews,newdata$log_installs,newdata$Category))+geom_point()+
+  aes(x=newdata$log_installs, y=newdata$log_reviews, color=newdata$Category)+
+  stat_summary(fun = "mean", geom = "line", alpha=0.3)+
+  stat_summary(fun = "mean", geom = "line", lty=2, aes(group=1),color="black")+
+  ylab("log number of reviews")+xlab("log number of installs")+theme(legend.position = "none")
+
+#only with intercept
+model.0<-lmer(log_reviews ~ 1 + (1|Category), data = newdata)
+summary(model.0)
+
+#random intercept, fixed predictor in individual level
+model.1<-lmer(log_reviews ~ Rating + log_installs + Size + (1|Category), data = newdata)
+summary(model.1)
+
+#run random intercept and slope model
+model.2<-lmer(log_reviews ~ Rating + log_installs + Size + (1+Rating|Category) + (1+log_installs|Category) + (1+Size|Category), data = newdata)
+summary(model.2)
+
+#run random slope model
+model.3<-lmer(log_installs ~ Rating + log_reviews + Size + (Rating|Category) + (log_reviews|Category) + (Size|Category), data = newdata)
+summary(model.3) 
+
+anova(model.1,model.2,model.3) # choose 'model.2'
+
+```
+
+#Model validation
+
+```{r}
+re <- plot(model.2)
+qq <- qqmath(model.2)
+grid.arrange(re,qq,nrow=1)
+#From the residual plot, I find that the mean of residuals is almost zero.From the Q-Q plot, I find that most of dots are on the lines so the normality is good.
+ggplot(data.frame(lev=hatvalues(model.2),pearson=residuals(model.2,type="pearson")),
+      aes(x=lev,y=pearson)) +
+    geom_point() +
+    theme_bw()
+#From the leverage plot,we can find that there are not obvious leverage point, except for some points on the right.This refers to the extent to which the coefficients in the regression model would not change if a particular observation was removed from the dataset.
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
