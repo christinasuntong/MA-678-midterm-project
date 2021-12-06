@@ -1,7 +1,7 @@
 ---
 title: "Report of MA678 Midterm Project"
 author: "Tong Sun"
-date: "12/4/2021"
+date: "12/1/2021"
 output:
   pdf_document: default
 ---
@@ -27,8 +27,15 @@ data<-read.csv("googleplaystore.csv")
 
 Google Play is the official app store of Android, Google's mobile platform. It allows people to view applications and load of content before downloading anything on their devices. The Play Store apps data has enormous potential to drive app-making businesses to success. But there still are some apps which have majority of reviews with fewer installs. So here a question comes out -- what is the relationship between numbers of reviews and installs? I used several factors and set up a multilevel model to answer this question, making some suggestions for future app-making businesses. Additionally, it indexed important information about Android apps. The model shows that the number of reviews is slightly different between categories. This report consists 4 main parts: Introduction, Method, Result and Discussion.
 
-##Introduction
+## Introduction
 
+## Method
+
+# Data Cleaning and Processing
+
+The main data set is published on [Kaggle: Google Play Store Dataset](https://www.kaggle.com/lava18/google-play-store-apps).
+
+Because the data set looks so messy and includes different types of variables, firstly I made lots of steps to data cleaning.I checked the types of the data and variables and changed all factor variables to be numeric, eliminating lots of symbols (such as "M"and currency symbol) as well.
 
 ## R Markdown
 
