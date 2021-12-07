@@ -35,7 +35,30 @@ Google Play is the official app store of Android, Google's mobile platform. It a
 
 The main data set is published on [Kaggle: Google Play Store Dataset](https://www.kaggle.com/lava18/google-play-store-apps).
 
-Because the data set looks so messy and includes different types of variables, firstly I made lots of steps to data cleaning.I checked the types of the data and variables and changed all factor variables to be numeric, eliminating lots of symbols (such as "M"and currency symbol) as well.
+Because the data set looks so messy and includes different types of variables, firstly I made lots of steps in data cleaning.I checked the types of the data and variables and changed all factor variables to be numeric, eliminating lots of symbols (such as "M"and currency symbol) as well. Next I replaced or removed all no-info items in each column because they didn't have any practical meaning. Finally, I changed 'Last Updated' column to date format.
+
+# Description of Data
+
+| column names      | explanation |
+| :--:              | :----- |
+| App               | Application name|
+| Rating            | Overall user rating of the app (as when scraped) |
+| Reviews           | Number of user reviews for the app (as when scraped) |
+| Size              | Size of the app (as when scraped) |
+| Installs          | Number of user downloads for the app (as when scraped) |
+| Type              | Paid of Free|
+| Price             | Price of the app (as when scraped) |
+| Content Rating    | Age group the app is targeted at-Children/Mature 21+/Adult |
+| Genres            | An app can belong to multiple genres (apart from its main category) |
+
+# EDA
+
+
+# Model Fitting
+
+After deleting lost data and duplicated rows, transforming log of column 'Installs' and 'Reviews' (because I found they all have a large scale with a long tale from the histogram plots showed above), I got 7369 observations of 15 variables. Here I only analysis those 'Type' == "Free",which has a larger proportion. 
+
+Considering different categories, I used multilevel model to fit the data. Here I chose three continuous variables -- 'log_installs', 'Size' and 'Rating' as model's predictors. From EDA part above, I guessed that for 'Size' and 'Rating' predictors, it should be random intercept and random slope model; for 'log_installs' predictor, it should only be random intercept model. To be more convinced, I still did three different models and used anova for model selecting.
 
 ## R Markdown
 

@@ -387,6 +387,20 @@ ggplot(data.frame(newdata$log_reviews,newdata$log_installs,newdata$Category))+ge
   stat_summary(fun = "mean", geom = "line", lty=2, aes(group=1),color="black")+
   ylab("log number of reviews")+xlab("log number of installs")+theme(legend.position = "none")
 
+ggplot(data.frame(newdata$log_reviews,newdata$Size,newdata$Category))+geom_point()+
+  aes(x=newdata$Size, y=newdata$log_reviews, color=newdata$Category)+
+  stat_summary(fun = "mean", geom = "line", alpha=0.3)+
+  stat_summary(fun = "mean", geom = "line", lty=2, aes(group=1),color="black")+
+  ylab("log number of reviews")+xlab("Size")+theme(legend.position = "none")
+
+ggplot(data.frame(newdata$log_reviews,newdata$Rating,newdata$Category))+geom_point()+
+  aes(x=newdata$Rating, y=newdata$log_reviews, color=newdata$Category)+
+  stat_summary(fun = "mean", geom = "line", alpha=0.3)+
+  stat_summary(fun = "mean", geom = "line", lty=2, aes(group=1),color="black")+
+  ylab("log number of reviews")+xlab("Rating")+theme(legend.position = "none")
+
+
+
 #only with intercept
 model.0<-lmer(log_reviews ~ 1 + (1|Category), data = newdata)
 summary(model.0)
@@ -396,7 +410,7 @@ model.1<-lmer(log_reviews ~ Rating + log_installs + Size + (1|Category), data = 
 summary(model.1)
 
 #run random intercept and slope model
-model.2<-lmer(log_reviews ~ Rating + log_installs + Size + (1+Rating|Category) + (1+log_installs|Category) + (1+Size|Category), data = newdata)
+model.2<-lmer(log_reviews ~ Rating + log_installs + Size + (1+Rating|Category) +  (1+Size|Category), data = newdata)
 summary(model.2)
 
 #run random slope model
