@@ -18,6 +18,7 @@ library(xts)
 library(lme4)
 library(lattice)
 library(gridExtra)
+library(arm)
 #load data
 data<-read.csv("googleplaystore.csv")
 ```
@@ -339,7 +340,9 @@ data.clean %>%
 
 
 #Modeling
-```{r}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message = FALSE,
+	warning = FALSE)
 #Drop NAs
 final.data<-na.omit(data.clean)
 #Checking NAs
@@ -399,26 +402,28 @@ ggplot(data.frame(newdata$log_reviews,newdata$Rating,newdata$Category))+geom_poi
   stat_summary(fun = "mean", geom = "line", lty=2, aes(group=1),color="black")+
   ylab("log number of reviews")+xlab("Rating")+theme(legend.position = "none")
 
-
-
 #only with intercept
 model.0<-lmer(log_reviews ~ 1 + (1|Category), data = newdata)
 summary(model.0)
 
 #random intercept, fixed predictor in individual level
-model.1<-lmer(log_reviews ~ Rating + log_installs + Size + (1|Category), data = newdata)
+model.1<-lmer(log_reviews ~ Rating + Size + (1|Category), data = newdata)
 summary(model.1)
 
 #run random intercept and slope model
-model.2<-lmer(log_reviews ~ Rating + log_installs + Size + (1+Rating|Category) +  (1+Size|Category), data = newdata)
+model.2<-lmer(log_reviews ~ Rating + Size + (1+Rating|Category) + (1+Size|Category) , data = newdata)
 summary(model.2)
 
-#run random slope model
-model.3<-lmer(log_installs ~ Rating + log_reviews + Size + (Rating|Category) + (log_reviews|Category) + (Size|Category), data = newdata)
-summary(model.3) 
+anova(model.0,model.1,model.2) # choose 'model.2'
+#save predicted scores
+newdata$pred_m2<-predict(model.2)
+#get confidence intervals for both fixed and random effects
+confint(model.2)
+confint.merMod(object = model.2, method = "boot")
 
-anova(model.1,model.2,model.3) # choose 'model.2'
-
+ranef(model.2)
+fixef(model.2)
+coef(model.2)
 ```
 
 #Model validation
