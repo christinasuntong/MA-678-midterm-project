@@ -1,8 +1,8 @@
 ---
-title: "google"
-author: "Christina"
+title: "MA678 Midterm Project"
+author: "Tong Sun"
 date: "11/19/2021"
-output: html_document
+output: pdf_document
 ---
 #Load packages and data
 
@@ -19,6 +19,7 @@ library(lme4)
 library(lattice)
 library(gridExtra)
 library(arm)
+library(ggpubr)
 #load data
 data<-read.csv("googleplaystore.csv")
 ```
@@ -361,7 +362,7 @@ newdata<-cbind(log_installs,log_reviews,data1)
 newdata<-subset(newdata, Type == "Free")
 
 #'log_reviews' vs 'log_installs'
-ggplot(data = newdata)+
+p1<-ggplot(data = newdata)+
   aes(log_reviews,log_installs)+
   geom_point(aes(color = Category),alpha = 0.8)+
   labs(title="grades of installs vs number of reviews",x="log(grades of installs)",y="log(number of reviews)")+
@@ -369,7 +370,7 @@ ggplot(data = newdata)+
   facet_wrap(~Content.Rating)
 
 #'log_reviews' vs 'Size'
-ggplot(data = newdata)+
+p2<-ggplot(data = newdata)+
   aes(log_reviews,Size)+
   geom_point(aes(color = Category),alpha = 0.8)+
   labs(title="Size vs number of reviews",x="Size",y="log(number of reviews)")+
@@ -377,31 +378,34 @@ ggplot(data = newdata)+
   facet_wrap(~Content.Rating)
 
 #'log_reviews' vs 'Rating'
-ggplot(data = newdata)+
+p3<-ggplot(data = newdata)+
   aes(log_reviews,Rating)+
   geom_point(aes(color = Category),alpha = 0.8)+
   labs(title="Rating vs number of reviews",x="Rating",y="log(number of reviews)")+
   geom_smooth(aes(color = Category),method = "lm",se=F)+
   facet_wrap(~Content.Rating)
 
-ggplot(data.frame(newdata$log_reviews,newdata$log_installs,newdata$Category))+geom_point()+
+p4<-ggplot(data.frame(newdata$log_reviews,newdata$log_installs,newdata$Category))+geom_point()+
   aes(x=newdata$log_installs, y=newdata$log_reviews, color=newdata$Category)+
   stat_summary(fun = "mean", geom = "line", alpha=0.3)+
   stat_summary(fun = "mean", geom = "line", lty=2, aes(group=1),color="black")+
   ylab("log number of reviews")+xlab("log number of installs")+theme(legend.position = "none")
 
-ggplot(data.frame(newdata$log_reviews,newdata$Size,newdata$Category))+geom_point()+
+p5<-ggplot(data.frame(newdata$log_reviews,newdata$Size,newdata$Category))+geom_point()+
   aes(x=newdata$Size, y=newdata$log_reviews, color=newdata$Category)+
   stat_summary(fun = "mean", geom = "line", alpha=0.3)+
   stat_summary(fun = "mean", geom = "line", lty=2, aes(group=1),color="black")+
   ylab("log number of reviews")+xlab("Size")+theme(legend.position = "none")
 
-ggplot(data.frame(newdata$log_reviews,newdata$Rating,newdata$Category))+geom_point()+
+p6<-ggplot(data.frame(newdata$log_reviews,newdata$Rating,newdata$Category))+geom_point()+
   aes(x=newdata$Rating, y=newdata$log_reviews, color=newdata$Category)+
   stat_summary(fun = "mean", geom = "line", alpha=0.3)+
   stat_summary(fun = "mean", geom = "line", lty=2, aes(group=1),color="black")+
   ylab("log number of reviews")+xlab("Rating")+theme(legend.position = "none")
 
+ggarrange(p1,p4)
+ggarrange(p2,p5)
+ggarrange(p3,p6)
 #only with intercept
 model.0<-lmer(log_reviews ~ 1 + (1|Category), data = newdata)
 summary(model.0)

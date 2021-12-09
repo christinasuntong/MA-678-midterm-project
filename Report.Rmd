@@ -20,6 +20,8 @@ library(xts)
 library(lme4)
 library(lattice)
 library(gridExtra)
+library(arm)
+library(ggpubr)
 data<-read.csv("googleplaystore.csv")
 ```
 
@@ -57,6 +59,58 @@ Because the data set looks so messy and includes different types of variables, f
 
 # EDA
 
+Here I would like to draw some plots to see the relationship between reviews and other variables, since my question is how some factors effect the number of reviews.
+
+```{r}
+p1<-ggplot(data = newdata)+
+  aes(log_reviews,log_installs)+
+  geom_point(aes(color = Category),alpha = 0.8)+
+  labs(title="grades of installs vs number of reviews",x="log(grades of installs)",y="log(number of reviews)")+
+  geom_smooth(aes(color = Category),method = "lm",se=F)+
+  facet_wrap(~Content.Rating)
+p4<-ggplot(data.frame(newdata$log_reviews,newdata$log_installs,newdata$Category))+geom_point()+
+  aes(x=newdata$log_installs, y=newdata$log_reviews, color=newdata$Category)+
+  stat_summary(fun = "mean", geom = "line", alpha=0.3)+
+  stat_summary(fun = "mean", geom = "line", lty=2, aes(group=1),color="black")+
+  ylab("log number of reviews")+xlab("log number of installs")+theme(legend.position = "none")
+ggarrange(p1,p4)
+```
+
+Figure 1 shows the relationship between the number of installs and reviews. In order to make the outcome more clearly, I made six facets by column 'Content.Rating'. But it seems like there is not too much significant relationship between these two variables, because the smoothed line are all in the same intercept and slope. Similarly, the plot on the right shows the same result -- all the lines in the plot have the similar trend by default. So I guess the variable 'log_installs' should not be included in our model.
+
+```{r}
+p2<-ggplot(data = newdata)+
+  aes(log_reviews,Size)+
+  geom_point(aes(color = Category),alpha = 0.8)+
+  labs(title="Size vs number of reviews",x="Size",y="log(number of reviews)")+
+  geom_smooth(aes(color = Category),method = "lm",se=F)+
+  facet_wrap(~Content.Rating)
+p5<-ggplot(data.frame(newdata$log_reviews,newdata$Size,newdata$Category))+geom_point()+
+  aes(x=newdata$Size, y=newdata$log_reviews, color=newdata$Category)+
+  stat_summary(fun = "mean", geom = "line", alpha=0.3)+
+  stat_summary(fun = "mean", geom = "line", lty=2, aes(group=1),color="black")+
+  ylab("log number of reviews")+xlab("Size")+theme(legend.position = "none")
+ggarrange(p2,p5)
+```
+
+Figure 2 shows the relationship between size and the number of reviews. Unlike the 'installs', the relationship here varies obviously between categories. There should be random intercept and random slope at the same time. For the plot on the right, I found that for some categories of apps, the number of reviews varies dramatically with the size of the application.
+
+```{r}
+p3<-ggplot(data = newdata)+
+  aes(log_reviews,Rating)+
+  geom_point(aes(color = Category),alpha = 0.8)+
+  labs(title="Rating vs number of reviews",x="Rating",y="log(number of reviews)")+
+  geom_smooth(aes(color = Category),method = "lm",se=F)+
+  facet_wrap(~Content.Rating)
+p6<-ggplot(data.frame(newdata$log_reviews,newdata$Rating,newdata$Category))+geom_point()+
+  aes(x=newdata$Rating, y=newdata$log_reviews, color=newdata$Category)+
+  stat_summary(fun = "mean", geom = "line", alpha=0.3)+
+  stat_summary(fun = "mean", geom = "line", lty=2, aes(group=1),color="black")+
+  ylab("log number of reviews")+xlab("Rating")+theme(legend.position = "none")
+ggarrange(p3,p6)
+```
+
+Figure 3 shows the relationship between rating and the number of reviews. The result is the same as the size's. The differences between categories are so significant. Also different categories have different slopes and intercepts. Therefore, I think the variables 'Size' and 'Rating' should be taken into account when I fit the model.
 
 # Model Fitting
 
@@ -121,21 +175,3 @@ ggplot(data.frame(lev=hatvalues(model.2),pearson=residuals(model.2,type="pearson
 
 
 ## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
