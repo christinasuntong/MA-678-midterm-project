@@ -282,18 +282,18 @@ ggplot(data = newdata)+
 ```
 
 
-![hchart](/Users/christinasun/Desktop/hchart/hchart1.png)
-![hchart](/Users/christinasun/Desktop/hchart/hchart2.png)
+![hchart](hchart1.png)
+![hchart](hchart2.png)
 
-![hchart](/Users/christinasun/Desktop/hchart/hchart3.png)
+![hchart](hchart3.png)
 
-![hchart](/Users/christinasun/Desktop/hchart/hchart4.png)
-![hchart](/Users/christinasun/Desktop/hchart/hchart5.png)
-![hchart](/Users/christinasun/Desktop/hchart/hchart6.png)
-![hchart](/Users/christinasun/Desktop/hchart/hchart7.png)
-![hchart](/Users/christinasun/Desktop/hchart/hchart8.png)
-![hchart](/Users/christinasun/Desktop/hchart/hchart9.png)
-![hchart](/Users/christinasun/Desktop/hchart/hchart10.png)
+![hchart](hchart4.png)
+![hchart](hchart5.png)
+![hchart](hchart6.png)
+![hchart](hchart7.png)
+![hchart](hchart8.png)
+![hchart](hchart9.png)
+![hchart](hchart10.png)
 
 ```{r echo=FALSE, fig.cap="Bar chart for installs in group"}
 #divide the range of 'Installs' by groups of 10k
