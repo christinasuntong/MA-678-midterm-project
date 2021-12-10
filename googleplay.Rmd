@@ -231,7 +231,7 @@ content_rating<-data.clean %>%
 #set highcharter options
 options(highcharter.theme = hc_theme_smpl(tooltip = list(valueDecimals = 2)))
 
-hc<-content_rating %>% hchart("pyramid", hcaes(x = Content.Rating, y = Total.Reviews), name = "Number of total reviews by content rating")
+content_rating %>% hchart("pyramid", hcaes(x = Content.Rating, y = Total.Reviews), name = "Number of total reviews by content rating")
 ```
 
 #Genres
@@ -369,10 +369,10 @@ p1<-ggplot(data = newdata)+
   facet_wrap(~Content.Rating)
 
 #'log_reviews' vs 'Size'
-p2<-ggplot(data = newdata)+
+ggplot(data = newdata)+
   aes(log_reviews,Size)+
   geom_point(aes(color = Category),alpha = 0.8)+
-  labs(title="Size vs number of reviews",x="Size",y="log(number of reviews)")+
+  labs(title="Size vs number of reviews",x="Size)",y="log(number of reviews)")+
   geom_smooth(aes(color = Category),method = "lm",se=F)+
   facet_wrap(~Content.Rating)
 
@@ -416,6 +416,11 @@ summary(model.1)
 #run random intercept and slope model
 model.2<-lmer(log_reviews ~ Rating + Size + (1+Rating|Category) + (1+Size|Category) , data = newdata)
 summary(model.2)
+
+#extract coefficients
+coefs<-data.frame(coef(summary(model.2)))
+#use normal distribution to approximate p-value
+coefs$p.z<- 2* (1-pnorm(abs(coefs$t.value)))
 
 anova(model.0,model.1,model.2) # choose 'model.2'
 #save predicted scores

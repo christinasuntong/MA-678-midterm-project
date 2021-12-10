@@ -21,7 +21,6 @@ library(arm)
 library(ggpubr)
 data<-read.csv("googleplaystore.csv")
 ```
-
 # Abstract
 
 Google Play is the official app store of Android, Google's mobile platform. It allows people to view applications and load of content before downloading anything on their devices. The Play Store apps data has enormous potential to drive app-making businesses to success. But there still are some apps which have majority of reviews with fewer installs. So here a question comes out -- what factors might influence the number of users' reviews ? I used several factors and set up a multilevel model to answer this question, making some suggestions for future app-making businesses. Additionally, it indexed important information about Android apps. The model shows that the number of reviews is slightly different between categories. This report consists 4 main parts: Introduction, Method, Result and Conclusion.
@@ -38,7 +37,7 @@ So here I would use multilevel regression to see how different their number of r
 
 The main data set is published on [Kaggle: Google Play Store Dataset](https://www.kaggle.com/lava18/google-play-store-apps).
 
-Because the data set looks so messy and includes different types of variables, firstly I made lots of steps in data cleaning.I checked the types of the data and variables and changed all factor variables to be numeric, eliminating lots of symbols (such as "M"and currency symbol) as well. Next I replaced or removed all no-info items in each column because they didn't have any practical meaning. Finally, I changed 'Last Updated' column to date format. After data cleaning, only 'Category', 'Content.Rating', 'Genres' and 'Current.Ver' are character.'Last.Updated' is date type. Other variables are all numeric.
+Firstly I made lots of steps to data cleaning.I checked the types of the data and variables and changed all factor variables to be numeric, eliminating lots of symbols (such as "M"and currency symbol) as well. I replaced or removed all no-info items in each column because they didn't have any practical meaning. And also I changed 'Last Updated' column to date format.
 
 ```{r, echo=FALSE,message=FALSE,warning=FALSE}
 #Change factor variables to be numeric.
@@ -117,13 +116,12 @@ c<-data %>%
 | Size              | Size of the app (as when scraped) |
 | Installs          | Number of user downloads for the app (as when scraped) |
 | Type              | Paid or Free|
-| Price             | Price of the app (as when scraped) |
 | Content Rating    | Age group the app is targeted at-Children/Mature 21+/Adult |
 | Genres            | An app can belong to multiple genres (apart from its main category) |
 
 ### EDA
 
-Here I would like to draw some plots to see the relationship between reviews and other variables, since my question is how some factors effect the number of reviews.
+Here I would like to draw some plots to see the relationship between reviews and other variables and analyze features of variables, since my question is how some factors effect the number of reviews.
 
 ```{r echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE,message = FALSE,
@@ -143,56 +141,34 @@ log_reviews<-log(data1$Reviews)
 newdata<-cbind(log_installs,log_reviews,data1)
 ```
 
-
-```{r echo=FALSE, fig.height=4, fig.width= 10,fig.cap="Figure1.Data was separated by 'Content.Rating' column in order to  show the relationship between the number of reviews and installs more clearly. Different colors represented for different categories."}
+```{r echo=FALSE, fig.height=4, fig.width= 10,fig.cap="The relationship between number of installs and reviews."}
 #Here I only analysis those 'Type' == "Free",which has a larger proportion.
 newdata<-subset(newdata, Type == "Free")
-p1<-ggplot(data = newdata)+
-  aes(log_reviews,log_installs)+
-  geom_point(aes(color = Category),alpha = 0.8)+
-  labs(title="grades of installs vs number of reviews",x="log(grades of installs)",y="log(number of reviews)")+
-  geom_smooth(aes(color = Category),method = "lm",se=F)+
-  facet_wrap(~Content.Rating)
-p4<-ggplot(data.frame(newdata$log_reviews,newdata$log_installs,newdata$Category))+geom_point()+
+ggplot(data.frame(newdata$log_reviews,newdata$log_installs,newdata$Category))+geom_point()+
   aes(x=newdata$log_installs, y=newdata$log_reviews, color=newdata$Category)+
   stat_summary(fun = "mean", geom = "line", alpha=0.3)+
   stat_summary(fun = "mean", geom = "line", lty=2, aes(group=1),color="black")+
   ylab("log number of reviews")+xlab("log number of installs")+theme(legend.position = "none")
-ggarrange(p1,p4)
 ```
 
-Figure 1 shows the relationship between the number of installs and reviews. In order to make the outcome more clearly, I made six facets by column 'Content.Rating'. But it seems like there is not too much significant relationship between these two variables, because the smoothed line are all in the same intercept and slope. Similarly, the plot on the right shows the same result -- all the lines in the plot have the similar trend by default. So I guess the variable 'log_installs' should not be included in our model.
+Figure 1 shows the relationship between the number of installs and reviews. But it seems like there is not too much significant relationship between these two variables, because all the lines in the plot have the similar trend by default. So I guess the variable 'log_installs' should not be included in our model.
 
-```{r echo=FALSE, fig.height=4, fig.width=10, fig.cap="Figure2. The relationship between size and the number of reviews."}
-p2<-ggplot(data = newdata)+
-  aes(log_reviews,Size)+
-  geom_point(aes(color = Category),alpha = 0.8)+
-  labs(title="Size vs number of reviews",x="Size",y="log(number of reviews)")+
-  geom_smooth(aes(color = Category),method = "lm",se=F)+
-  facet_wrap(~Content.Rating)
-p5<-ggplot(data.frame(newdata$log_reviews,newdata$Size,newdata$Category))+geom_point()+
+```{r echo=FALSE, fig.height=4, fig.width=10, fig.cap="The relationship between size and the number of reviews."}
+ggplot(data.frame(newdata$log_reviews,newdata$Size,newdata$Category))+geom_point()+
   aes(x=newdata$Size, y=newdata$log_reviews, color=newdata$Category)+
   stat_summary(fun = "mean", geom = "line", alpha=0.3)+
   stat_summary(fun = "mean", geom = "line", lty=2, aes(group=1),color="black")+
   ylab("log number of reviews")+xlab("Size")+theme(legend.position = "none")
-ggarrange(p2,p5)
 ```
 
 Figure 2 shows the relationship between size and the number of reviews. Unlike the 'installs', the relationship here varies obviously between categories. There should be random intercept and random slope at the same time. For the plot on the right, I found that for some categories of apps, the number of reviews varies dramatically with the size of the application.
 
-```{r echo=FALSE, fig.height=4, fig.width=10, fig.cap="Figure3.The relationship between rating and the number of reviews." }
-p3<-ggplot(data = newdata)+
-  aes(log_reviews,Rating)+
-  geom_point(aes(color = Category),alpha = 0.8)+
-  labs(title="Rating vs number of reviews",x="Rating",y="log(number of reviews)")+
-  geom_smooth(aes(color = Category),method = "lm",se=F)+
-  facet_wrap(~Content.Rating)
-p6<-ggplot(data.frame(newdata$log_reviews,newdata$Rating,newdata$Category))+geom_point()+
+```{r echo=FALSE, fig.height=4, fig.width=10, fig.cap="The relationship between rating and the number of reviews." }
+ggplot(data.frame(newdata$log_reviews,newdata$Rating,newdata$Category))+geom_point()+
   aes(x=newdata$Rating, y=newdata$log_reviews, color=newdata$Category)+
   stat_summary(fun = "mean", geom = "line", alpha=0.3)+
   stat_summary(fun = "mean", geom = "line", lty=2, aes(group=1),color="black")+
   ylab("log number of reviews")+xlab("Rating")+theme(legend.position = "none")
-ggarrange(p3,p6)
 ```
 
 Figure 3 shows the relationship between rating and the number of reviews. The result is the same as the size's. The differences between categories are so significant. Also different categories have different slopes and intercepts. Therefore, I think the variables 'Size' and 'Rating' should be taken into account when I fit the model.
@@ -214,17 +190,15 @@ model.2<-lmer(log_reviews ~ Rating + Size + (1+Rating|Category) + (1+Size|Catego
 #anova(model.0,model.1,model.2) # choose 'model.2'
 ```
 
-Considering different categories, I used multilevel model to fit the data. From the EDA part, I found that for the 'log_installs' predictor, the differences between each category was not so significant. So I did not choose 'log_installs' as one of model's predictor.
-
-Here I chose continuous variables -- 'Size' and 'Rating' as model's predictors. From EDA part above, I guessed that for 'Size' and 'Rating' predictors, it should be random intercept and random slope model. To be more convinced, I still did three different models and used anova for model selecting (choosing the one has the smallest AIC, model.2 shown as follow). 
+Considering different categories, I used multilevel model to fit the data. From the EDA part, I found that for the 'log_installs' predictor, the differences between each category was not so significant. So I did not choose 'log_installs' as one of model's predictor. Here I chose continuous variables -- 'Size' and 'Rating' as model's predictors. From EDA part above, I guessed that for 'Size' and 'Rating' predictors, it should be random intercept and random slope model. To be more convinced, I still did three different models and used anova for model selecting (choosing the one has the smallest AIC, model.2 shown as follow). 
 
 To see the fixed effects below:
 
-|                |Estimate   |Std. Error  |t value |
-|:---:           |:---:      |:---:       |:---:   |
-|(Intercept)     |1.42       |0.52        |2.75    |
-|Rating          |1.24       |0.16        |7.72    |
-|Size            |0.05       |0.01        |8.48    |
+|                |Estimate   |Std. Error  |t value |p value |
+|:---:           |:---:      |:---:       |:---:   |:---:   |
+|(Intercept)     |1.42       |0.52        |2.75    |5.93e-03|
+|Rating          |1.24       |0.16        |7.72    |1.20e-14|
+|Size            |0.05       |0.01        |8.48    |0.00e+00|
 
 ### Model results
 
@@ -244,7 +218,7 @@ In addition, we can see differences between each category. Here I took three of 
 
 For different categories, the influence of each predictor is always not the same. For ENTERTAINMENT, I think whether people will download the app depends more on how people rate it, and because it's entertainment, people are more likely to decide whether to download a non-essential app because of the size of the device's memory. So the parameters of 'Rating' and 'Size' are bigger than other categories. For EVENTS, the parameter of 'Rating' is small, this might because these apps are mostly nonfiction apps, and people rarely rate them. And for MEDICAL, since apps in this category are essential to people's lives, the number of times people review them is less dependent on other users' ratings and the size of the app itself.
 
-### Model Validation
+### Model Validation 
 
 ```{r echo=FALSE, fig.height=2.5, fig.width=6, fig.cap="Residual plot and Q-Q plot."}
 re <- plot(model.2)
@@ -265,10 +239,7 @@ From the residual plot,in Figure 4, I find that the mean of residuals is almost 
 
 From the estimates above, I would draw the conclusion as follow. The parameters of variables shows that "Rating" and "Size" both have a positive influence on the number of reviews. The higher level from people's rating, which means people who used this app before have more sense about it, they would like to recommend it to others, so they are willing to share their feelings on social platforms. In addition, for the "Size" factor, the larger size the app has, the more probably people will write reviews for it. By default, the reason of it is those apps with larger size may include more information and more utility features, in that case there will be more people downloading and using them. Therefore there will be more reviews of them, but the influence of size is not so significant comparing with rating.
 
-For the purpose of giving suggestions for future app-making businesses, I 
-
-# Citation
-
+For the purpose of giving suggestions for future app-making businesses, I would like to suggest them pay more attention to people's rating factor when they create new apps. Obviously, if the app has higher rating that means people like this production more, probably they will write more reviews on it so this will attract more and more people to use it. And another suggestion is businesses could care about the app's size when they design a new production. For those apps include more utility features, people have to use them so they probably will not care about their sizes so much. But for those apps only for entertainment, if the application occupies a large amount of device memory, people will consider not downloading and using it, or have a high chance to uninstall it after downloading. Of course, there are not many comments on these software, which indicates that these software is not popular.
 
 \newpage
 ## Appendix
@@ -283,34 +254,46 @@ hist(data.clean$Size)
 hist(data.clean$Rating)
 ```
 
-```{r echo=FALSE, fig.cap="Plot of most popular category by number of reviews"}
-data.clean %>%
-  count(Category, Reviews) %>%
-  group_by(Category) %>%
-  summarize(
-    TotalReviews = sum(as.numeric(Reviews))
-  ) %>%
-  arrange(-TotalReviews) %>%
-  hchart('scatter', hcaes(x = "Category", y = "TotalReviews", size = "TotalReviews", color = "Category")) %>%
-  hc_add_theme(hc_theme_538()) %>%
-  hc_title(text = "Most popular categories (# of reviews)")
+```{r echo=FALSE, fig.cap="'log_reviews' vs 'log_installs'"}
+ggplot(data = newdata)+
+  aes(log_reviews,log_installs)+
+  geom_point(aes(color = Category),alpha = 0.8)+
+  labs(title="grades of installs vs number of reviews",x="log(grades of installs)",y="log(number of reviews)")+
+  geom_smooth(aes(color = Category),method = "lm",se=F)+
+  facet_wrap(~Content.Rating)
 ```
 
-```{r echo=FALSE, fig.cap="Distribution of application size(in MB)"}
-data.clean %>%
-  count(Size)  %>%
-  hchart('area', hcaes(x = "Size", y = "n")) %>%
-  hc_colors("#fb4901") %>%
-  hc_add_theme(hc_theme_ffx()) %>%
-  hc_title(text = "Distribution of application size(in MB)")
+```{r echo=FALSE, fig.cap="'log_reviews' vs 'Size'"}
+ggplot(data = newdata)+
+  aes(log_reviews,Size)+
+  geom_point(aes(color = Category),alpha = 0.8)+
+  labs(title="Size vs number of reviews",x="Size)",y="log(number of reviews)")+
+  geom_smooth(aes(color = Category),method = "lm",se=F)+
+  facet_wrap(~Content.Rating)
 ```
 
-```{r echo=FALSE, fig.cap="Application size range (in MB) by application type"}
-hcboxplot(x = data.clean$Size, var = data.clean$Type, outliers = TRUE, color = "#fb4901", fillColor = "lightblue") %>%
-  hc_chart(type = "column") %>%
-  hc_add_theme(hc_theme_ffx()) %>%
-  hc_title(text = "Application size range (in MB) by application type")
+```{r echo=FALSE, fig.cap="'log_reviews' vs 'Rating'"}
+ggplot(data = newdata)+
+  aes(log_reviews,Rating)+
+  geom_point(aes(color = Category),alpha = 0.8)+
+  labs(title="Rating vs number of reviews",x="Rating",y="log(number of reviews)")+
+  geom_smooth(aes(color = Category),method = "lm",se=F)+
+  facet_wrap(~Content.Rating)
 ```
+
+
+![hchart](/Users/christinasun/Desktop/hchart/hchart1.png)
+![hchart](/Users/christinasun/Desktop/hchart/hchart2.png)
+
+![hchart](/Users/christinasun/Desktop/hchart/hchart3.png)
+
+![hchart](/Users/christinasun/Desktop/hchart/hchart4.png)
+![hchart](/Users/christinasun/Desktop/hchart/hchart5.png)
+![hchart](/Users/christinasun/Desktop/hchart/hchart6.png)
+![hchart](/Users/christinasun/Desktop/hchart/hchart7.png)
+![hchart](/Users/christinasun/Desktop/hchart/hchart8.png)
+![hchart](/Users/christinasun/Desktop/hchart/hchart9.png)
+![hchart](/Users/christinasun/Desktop/hchart/hchart10.png)
 
 ```{r echo=FALSE, fig.cap="Bar chart for installs in group"}
 #divide the range of 'Installs' by groups of 10k
@@ -325,35 +308,6 @@ installs<-data.clean %>%
 ggplot(installs, aes(x="", y=n, fill=Installs.Group))+
   geom_bar(width = 1, stat = "identity")
 ```
-
-```{r echo=FALSE, fig.cap="Percentage of paid vs free apps"}
-#The total split between free and paid applications
-type<-data.clean %>%
-  count(Type) %>%
-  mutate(perc = round((n / sum(n)) *100)) %>%
-  arrange(desc(perc))
-
-hciconarray(type$Type, type$perc, icons = "android", size = 5) %>%
-  hc_title(text = "Percentage of paid vs free apps")
-```
-
-```{r echo=FALSE, fig.cap="Percentage of Free vs Paid by Category"}
-data.clean %>%
-  group_by(Category, Type) %>%
-  summarize(
-    n = n()
-  ) %>%
-  mutate(perc = round((n / sum(n))*100)) %>%
-  hchart('bar', hcaes(x = 'Category', y = 'perc', group = 'Type')) %>%
-  hc_plotOptions(series = list(stacking = 'normal')) %>%
-  hc_title(text = "Percentage of Free vs Paid by Category") %>%
-  hc_add_theme(hc_theme_flat())
-```
-
-```{r}
-
-```
-
 
 \newpage
 ### Full Results
@@ -373,4 +327,8 @@ Coefficients of model
 coef(model.2)
 ```
 
+Confidence intervals for both fixed and random effects
+```{r echo=FALSE}
+#confint.merMod(object = model.2, method = "boot")
+```
 
