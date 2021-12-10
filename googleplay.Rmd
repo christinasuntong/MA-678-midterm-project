@@ -26,7 +26,7 @@ data<-read.csv("googleplaystore.csv")
 
 #Data cleaning
 
-```{r}
+```{r,echo=FALSE}
 #Check the types of data and variables
 class(data)
 str(data)
@@ -103,7 +103,6 @@ data %>%
     Android.Ver %in% "Varies with device"
   ) %>%
   count() #Same as above,with "Varies with device" label present.There were a total of 1362 applications with "Varies with device" which we transformed to NA.
-p8<-hist(data.clean$Reviews)
 ```
 
 #Category
@@ -126,8 +125,8 @@ data.clean %>%
 
 ```{r}
 #Histogram plot of 'Size'
-p9<-hist(data.clean$Size)
-p10<-hist(data.clean$Rating)
+hist(data.clean$Size)
+hist(data.clean$Rating)
 data.clean %>%
   count(Size)  %>%
   hchart('area', hcaes(x = "Size", y = "n")) %>%
@@ -146,8 +145,7 @@ hcboxplot(x = data.clean$Size, var = data.clean$Type, outliers = TRUE, color = "
 
 ```{r}
 #Histogram plot of 'Installs'
-p7<-hist(data.clean$Installs)
-ggarrange(p7,p8,p9,p10,nrow = 2)
+hist(data.clean$Installs)
 #divide the range of 'Installs' by groups of 10k
 installs<-data.clean %>%
   group_by(
@@ -157,9 +155,8 @@ installs<-data.clean %>%
     n = n()
   )
 #create a bar chart
-bp<-ggplot(installs, aes(x="", y=n, fill=Installs.Group))+
+ggplot(installs, aes(x="", y=n, fill=Installs.Group))+
   geom_bar(width = 1, stat = "identity")
-bp
 #create a pie chart
 pie<-bp + coord_polar("y", start = 0)
 pie

@@ -2,16 +2,12 @@
 title: "Report of MA678 Midterm Project"
 author: "Tong Sun"
 date: "12/1/2021"
-output:
-  pdf_document: default
+output: pdf_document
+always_allow_html: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(
-	echo = TRUE,
-	message = FALSE,
-	warning = FALSE
-)
+knitr::opts_chunk$set(include = FALSE)
 library(tidyverse)
 library(highcharter)
 library(lubridate)
@@ -25,25 +21,92 @@ library(ggpubr)
 data<-read.csv("googleplaystore.csv")
 ```
 
-## Abstract
+# Abstract
 
-Google Play is the official app store of Android, Google's mobile platform. It allows people to view applications and load of content before downloading anything on their devices. The Play Store apps data has enormous potential to drive app-making businesses to success. But there still are some apps which have majority of reviews with fewer installs. So here a question comes out -- what factors might influence the number of users' reviews ? I used several factors and set up a multilevel model to answer this question, making some suggestions for future app-making businesses. Additionally, it indexed important information about Android apps. The model shows that the number of reviews is slightly different between categories. This report consists 4 main parts: Introduction, Method, Result and Conlusion.
+Google Play is the official app store of Android, Google's mobile platform. It allows people to view applications and load of content before downloading anything on their devices. The Play Store apps data has enormous potential to drive app-making businesses to success. But there still are some apps which have majority of reviews with fewer installs. So here a question comes out -- what factors might influence the number of users' reviews ? I used several factors and set up a multilevel model to answer this question, making some suggestions for future app-making businesses. Additionally, it indexed important information about Android apps. The model shows that the number of reviews is slightly different between categories. This report consists 4 main parts: Introduction, Method, Result and Conclusion.
 
-## Introduction
+# Introduction
 
 Google Play indexes important information about Android apps, including ratings, alternative suggestions,user reviews and other descriptions of apps. It uses sophisticated modern-day techniques (like dynamic page load) using JQuery making scraping more challenging. The Play Store apps data has enormous potential to drive app-making businesses to success. Actionable insights can be drawn for developers to work on and capture the Android market! So each app has its own features and some similarities with others as well, such as the number of installs, types and the price of apps. And some features may lead the apps to be more out-standing.
 
 So here I would use multilevel regression to see how different their number of reviews are between each category.Before that, I cleaned the data and added with some new columns to see which factors are more significant.
 
-## Method
+# Method
 
-# Data Cleaning and Processing
+### Data Cleaning and Processing
 
 The main data set is published on [Kaggle: Google Play Store Dataset](https://www.kaggle.com/lava18/google-play-store-apps).
 
-Because the data set looks so messy and includes different types of variables, firstly I made lots of steps in data cleaning.I checked the types of the data and variables and changed all factor variables to be numeric, eliminating lots of symbols (such as "M"and currency symbol) as well. Next I replaced or removed all no-info items in each column because they didn't have any practical meaning. Finally, I changed 'Last Updated' column to date format.
+Because the data set looks so messy and includes different types of variables, firstly I made lots of steps in data cleaning.I checked the types of the data and variables and changed all factor variables to be numeric, eliminating lots of symbols (such as "M"and currency symbol) as well. Next I replaced or removed all no-info items in each column because they didn't have any practical meaning. Finally, I changed 'Last Updated' column to date format. After data cleaning, only 'Category', 'Content.Rating', 'Genres' and 'Current.Ver' are character.'Last.Updated' is date type. Other variables are all numeric.
 
-# Description of Data
+```{r include=FALSE}
+#Change factor variables to be numeric.
+data.clean<-data %>%
+  mutate(
+    #eliminate some characters to transform 'Installs' to numeric
+    Installs = gsub("\\+", "", as.character(Installs)),
+    Installs = as.numeric(gsub(",","",Installs)),
+    #eliminate M to transform 'Size' to numeric
+    Size = gsub("M", "", Size),
+    #replace cells with 'k' to '0' since it is < 1MB
+    Size = ifelse(grepl("k", Size), 0, as.numeric(Size)),
+    #transform reviews to numeric
+    Reviews = as.numeric(as.character(Reviews)),
+    #remove currency symbol from Price, change it to numeric
+    Price = as.numeric(gsub("\\$", "", as.character(Price))),
+    #change 'Last Updated' to date format
+    Last.Updated = mdy(Last.Updated),
+    #replace "Varies with device" to NA since it is unknown
+    Min.Android.Ver = gsub("Varies with device", NA, Android.Ver),
+    #keep only version number to one decimal
+    Min.Android.Ver = as.numeric(substr(Min.Android.Ver, start = 1, stop = 3)),
+    #drop old Android version column
+    Android.Ver = NULL
+  ) %>%
+  filter(
+    # two apps had type as 0 or NA,remove them
+    Type %in% c("Free", "Paid")
+  )
+#check duplicate records
+nrow(data.clean %>%
+       distinct()) #The above should list 10841,so there are 485 rows duplicated.I'll remove them later.
+#NA analysis
+data.clean %>%
+  summarise_all(
+    funs(sum(is.na(.))) 
+  ) %>%
+  gather() %>%
+  #only show columns with NA
+  filter(value > 1) %>%
+  arrange(-value) %>%
+    hchart('column', hcaes(x = 'key', y = 'value', color = 'key')) %>%
+  hc_add_theme(hc_theme_elementary()) %>%
+  hc_title(text = "Columns with NA values")
+  #here we have three columns with NA values.Following I will take a closer look at them.
+#NA values in Size
+data %>%
+  filter(
+    Size %in% "Varies with device"
+  ) %>%
+  count() #From the data cleaning process,there are a total of 1695 applications with "Varies with device" which I transformed to NAs.So,that explains NAs in this column.
+
+#NA values in 'Rating'
+data.clean %>%
+  filter(is.na(Rating)) %>%
+  count(Installs) %>%
+  arrange(-n) %>%
+  hchart('column', hcaes(x = "Installs", y = "n")) %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_title(text = "Installations with no rating") #Most applications without rating have very few installs,which could make sense.
+#NA values in 'Minimum Android Version'
+data %>%
+  filter(
+    Android.Ver %in% "Varies with device"
+  ) %>%
+  count() #Same as above,with "Varies with device" label present.There were a total of 1362 applications with "Varies with device" which we transformed to NA.
+```
+
+### Description of Data
 
 | column names      | explanation |
 | :--:              | :----- |
@@ -52,16 +115,37 @@ Because the data set looks so messy and includes different types of variables, f
 | Reviews           | Number of user reviews for the app (as when scraped) |
 | Size              | Size of the app (as when scraped) |
 | Installs          | Number of user downloads for the app (as when scraped) |
-| Type              | Paid of Free|
+| Type              | Paid or Free|
 | Price             | Price of the app (as when scraped) |
 | Content Rating    | Age group the app is targeted at-Children/Mature 21+/Adult |
 | Genres            | An app can belong to multiple genres (apart from its main category) |
 
-# EDA
+### EDA
 
 Here I would like to draw some plots to see the relationship between reviews and other variables, since my question is how some factors effect the number of reviews.
 
-```{r}
+```{r include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message = FALSE,
+	warning = FALSE)
+#Drop NAs
+final.data<-na.omit(data.clean)
+#Checking NAs
+apply(X=final.data, MARGIN = 2,FUN = function(col) any(is.na(col))) #There is no NAs in data frame.
+#Drop duplicated rows
+data1<-final.data %>%
+       distinct()
+#Change 'Category' into factor
+data1$Category<-as.factor(data1$Category)
+#Make transform of 'Installs' & 'Reviews'
+log_installs<-log(data1$Installs)
+log_reviews<-log(data1$Reviews)
+newdata<-cbind(log_installs,log_reviews,data1)
+```
+
+
+```{r echo=FALSE, fig.height=4, fig.width= 10,fig.cap="Figure1.Data was separated by 'Content.Rating' column in order to  show the relationship between the number of reviews and installs more clearly. Different colors represented for different categories."}
+#Here I only analysis those 'Type' == "Free",which has a larger proportion.
+newdata<-subset(newdata, Type == "Free")
 p1<-ggplot(data = newdata)+
   aes(log_reviews,log_installs)+
   geom_point(aes(color = Category),alpha = 0.8)+
@@ -78,7 +162,7 @@ ggarrange(p1,p4)
 
 Figure 1 shows the relationship between the number of installs and reviews. In order to make the outcome more clearly, I made six facets by column 'Content.Rating'. But it seems like there is not too much significant relationship between these two variables, because the smoothed line are all in the same intercept and slope. Similarly, the plot on the right shows the same result -- all the lines in the plot have the similar trend by default. So I guess the variable 'log_installs' should not be included in our model.
 
-```{r}
+```{r echo=FALSE, fig.height=4, fig.width=10, fig.cap="Figure2. The relationship between size and the number of reviews."}
 p2<-ggplot(data = newdata)+
   aes(log_reviews,Size)+
   geom_point(aes(color = Category),alpha = 0.8)+
@@ -95,7 +179,7 @@ ggarrange(p2,p5)
 
 Figure 2 shows the relationship between size and the number of reviews. Unlike the 'installs', the relationship here varies obviously between categories. There should be random intercept and random slope at the same time. For the plot on the right, I found that for some categories of apps, the number of reviews varies dramatically with the size of the application.
 
-```{r}
+```{r echo=FALSE, fig.height=4, fig.width=10, fig.cap="Figure3.The relationship between rating and the number of reviews." }
 p3<-ggplot(data = newdata)+
   aes(log_reviews,Rating)+
   geom_point(aes(color = Category),alpha = 0.8)+
@@ -112,22 +196,29 @@ ggarrange(p3,p6)
 
 Figure 3 shows the relationship between rating and the number of reviews. The result is the same as the size's. The differences between categories are so significant. Also different categories have different slopes and intercepts. Therefore, I think the variables 'Size' and 'Rating' should be taken into account when I fit the model.
 
-# Model Fitting
+### Model Fitting
 
-After deleting lost data and duplicated rows, transforming log of column 'Installs' and 'Reviews' (because I found they all have a large scale with a long tale from the histogram plots showed above), I got 7369 observations of 15 variables. Here I only analysis those 'Type' == "Free",which has a larger proportion. 
+After deleting lost data and duplicated rows, transforming log of column 'Installs' and 'Reviews' (because I found they all have a large scale with a long tale from the histogram plots showed above), I got 7369 observations of 15 variables. But I will choose only several variables to use. Here I only analysis those 'Type' == "Free",which has a larger proportion. 
 
-```{r}
+```{r include=FALSE}
+#only with intercept
+model.0<-lmer(log_reviews ~ 1 + (1|Category), data = newdata)
+summary(model.0)
 
+#random intercept, fixed predictor in individual level
+model.1<-lmer(log_reviews ~ Rating + Size + (1|Category), data = newdata)
+summary(model.1)
+
+#run random intercept and slope model
+model.2<-lmer(log_reviews ~ Rating + Size + (1+Rating|Category) + (1+Size|Category) , data = newdata)
+summary(model.2)
+
+anova(model.0,model.1,model.2) # choose 'model.2'
 ```
 
 Considering different categories, I used multilevel model to fit the data. From the EDA part, I found that for the 'log_installs' predictor, the differences between each category was not so significant. So I did not choose 'log_installs' as one of model's predictor.
 
-Here I chose continuous variables -- 'Size' and 'Rating' as model's predictors. From EDA part above, I guessed that for 'Size' and 'Rating' predictors, it should be random intercept and random slope model. To be more convinced, I still did three different models and used anova for model selecting (choosing the one has the smallest AIC). Below is the function:
-
-```{r}
-model.2<-lmer(log_reviews ~ Rating + Size + (1+Rating|Category) + (1+Size|Category) , data = newdata)
-summary(model.2)
-```
+Here I chose continuous variables -- 'Size' and 'Rating' as model's predictors. From EDA part above, I guessed that for 'Size' and 'Rating' predictors, it should be random intercept and random slope model. To be more convinced, I still did three different models and used anova for model selecting (choosing the one has the smallest AIC, model.2 shown as follow). 
 
 To see the fixed effects below:
 
@@ -137,7 +228,7 @@ To see the fixed effects below:
 |Rating          |1.24       |0.16        |7.72    |
 |Size            |0.05       |0.01        |8.48    |
 
-# Model results
+### Model results
 
 As we can see the results of fixed effects above, here I only take one of those categories into account. For ART_AND_DESIGN category, we can conclude this formula:
 
@@ -155,7 +246,7 @@ In addition, we can see differences between each category. Here I took three of 
 
 For different categories, the influence of each predictor is always not the same. For ENTERTAINMENT, I think whether people will download the app depends more on how people rate it, and because it's entertainment, people are more likely to decide whether to download a non-essential app because of the size of the device's memory. So the parameters of 'Rating' and 'Size' are bigger than other categories. For EVENTS, the parameter of 'Rating' is small, this might because these apps are mostly nonfiction apps, and people rarely rate them. And for MEDICAL, since apps in this category are essential to people's lives, the number of times people review them is less dependent on other users' ratings and the size of the app itself.
 
-# Model Validation
+### Model Validation
 
 ```{r echo=FALSE, fig.height=2.5, fig.width=6, fig.cap="Residual plot and Q-Q plot."}
 re <- plot(model.2)
@@ -172,27 +263,102 @@ ggplot(data.frame(lev=hatvalues(model.2),pearson=residuals(model.2,type="pearson
 
 From the residual plot,in Figure 4, I find that the mean of residuals is almost zero.From the Q-Q plot, I find that most of dots are on the lines so the normality is good. From the leverage plot in Figure 5, we can see that there are not obvious leverage point, except for some points on the right.This refers to the extent to which the coefficients in the regression model would not change if a particular observation was removed from the dataset.
 
-## Conclusion
+# Conclusion
 
 From the estimates above, I would draw the conclusion as follow. The parameters of variables shows that "Rating" and "Size" both have a positive influence on the number of reviews. The higher level from people's rating, which means people who used this app before have more sense about it, they would like to recommend it to others, so they are willing to share their feelings on social platforms. In addition, for the "Size" factor, the larger size the app has, the more probably people will write reviews for it. By default, the reason of it is those apps with larger size may include more information and more utility features, in that case there will be more people downloading and using them. Therefore there will be more reviews of them, but the influence of size is not so significant comparing with rating.
 
 For the purpose of giving suggestions for future app-making businesses, I 
 
-## Citation
+# Citation
 
 
 \newpage
 ## Appendix
 
-# More EDA
+### More EDA
+
+```{r echo=FALSE, fig.cap="Distribution plots for number of installs, number of reviews, size and rating"}
+par(mfrow = c(2, 2))
+hist(data.clean$Installs)
+hist(data.clean$Reviews)
+hist(data.clean$Size)
+hist(data.clean$Rating)
+```
+
+```{r echo=FALSE, fig.cap="Plot of most popular category by number of reviews"}
+data.clean %>%
+  count(Category, Reviews) %>%
+  group_by(Category) %>%
+  summarize(
+    TotalReviews = sum(as.numeric(Reviews))
+  ) %>%
+  arrange(-TotalReviews) %>%
+  hchart('scatter', hcaes(x = "Category", y = "TotalReviews", size = "TotalReviews", color = "Category")) %>%
+  hc_add_theme(hc_theme_538()) %>%
+  hc_title(text = "Most popular categories (# of reviews)")
+```
+
+```{r echo=FALSE, fig.cap="Distribution of application size(in MB)"}
+data.clean %>%
+  count(Size)  %>%
+  hchart('area', hcaes(x = "Size", y = "n")) %>%
+  hc_colors("#fb4901") %>%
+  hc_add_theme(hc_theme_ffx()) %>%
+  hc_title(text = "Distribution of application size(in MB)")
+```
+
+```{r echo=FALSE, fig.cap="Application size range (in MB) by application type"}
+hcboxplot(x = data.clean$Size, var = data.clean$Type, outliers = TRUE, color = "#fb4901", fillColor = "lightblue") %>%
+  hc_chart(type = "column") %>%
+  hc_add_theme(hc_theme_ffx()) %>%
+  hc_title(text = "Application size range (in MB) by application type")
+```
+
+```{r echo=FALSE, fig.cap="Bar chart for installs in group"}
+#divide the range of 'Installs' by groups of 10k
+installs<-data.clean %>%
+  group_by(
+    Installs.Group = cut(Installs, breaks = seq(0, 1000000000, by = 10000))
+  ) %>%
+  summarise(
+    n = n()
+  )
+#create a bar chart
+ggplot(installs, aes(x="", y=n, fill=Installs.Group))+
+  geom_bar(width = 1, stat = "identity")
+```
+
+```{r echo=FALSE, fig.cap="Percentage of paid vs free apps"}
+#The total split between free and paid applications
+type<-data.clean %>%
+  count(Type) %>%
+  mutate(perc = round((n / sum(n)) *100)) %>%
+  arrange(desc(perc))
+
+hciconarray(type$Type, type$perc, icons = "android", size = 5) %>%
+  hc_title(text = "Percentage of paid vs free apps")
+```
+
+```{r echo=FALSE, fig.cap="Percentage of Free vs Paid by Category"}
+data.clean %>%
+  group_by(Category, Type) %>%
+  summarize(
+    n = n()
+  ) %>%
+  mutate(perc = round((n / sum(n))*100)) %>%
+  hchart('bar', hcaes(x = 'Category', y = 'perc', group = 'Type')) %>%
+  hc_plotOptions(series = list(stacking = 'normal')) %>%
+  hc_title(text = "Percentage of Free vs Paid by Category") %>%
+  hc_add_theme(hc_theme_flat())
+```
 
 ```{r}
-p7<-hist(data.clean$Installs)
-p8<-hist(data.clean$Reviews)
-grid.arrange(p7,p8)
+
 ```
+
+
 \newpage
-## Full Results
+### Full Results
 
 Random effects of model
 ```{r echo=FALSE}
