@@ -4,10 +4,11 @@ author: "Tong Sun"
 date: "12/1/2021"
 output: pdf_document
 always_allow_html: true
+
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(include = FALSE)
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(highcharter)
 library(lubridate)
@@ -39,7 +40,7 @@ The main data set is published on [Kaggle: Google Play Store Dataset](https://ww
 
 Because the data set looks so messy and includes different types of variables, firstly I made lots of steps in data cleaning.I checked the types of the data and variables and changed all factor variables to be numeric, eliminating lots of symbols (such as "M"and currency symbol) as well. Next I replaced or removed all no-info items in each column because they didn't have any practical meaning. Finally, I changed 'Last Updated' column to date format. After data cleaning, only 'Category', 'Content.Rating', 'Genres' and 'Current.Ver' are character.'Last.Updated' is date type. Other variables are all numeric.
 
-```{r include=FALSE}
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
 #Change factor variables to be numeric.
 data.clean<-data %>%
   mutate(
@@ -68,7 +69,7 @@ data.clean<-data %>%
     Type %in% c("Free", "Paid")
   )
 #check duplicate records
-nrow(data.clean %>%
+a<-nrow(data.clean %>%
        distinct()) #The above should list 10841,so there are 485 rows duplicated.I'll remove them later.
 #NA analysis
 data.clean %>%
@@ -84,7 +85,7 @@ data.clean %>%
   hc_title(text = "Columns with NA values")
   #here we have three columns with NA values.Following I will take a closer look at them.
 #NA values in Size
-data %>%
+b<-data %>%
   filter(
     Size %in% "Varies with device"
   ) %>%
@@ -99,7 +100,7 @@ data.clean %>%
   hc_add_theme(hc_theme_google()) %>%
   hc_title(text = "Installations with no rating") #Most applications without rating have very few installs,which could make sense.
 #NA values in 'Minimum Android Version'
-data %>%
+c<-data %>%
   filter(
     Android.Ver %in% "Varies with device"
   ) %>%
@@ -124,13 +125,13 @@ data %>%
 
 Here I would like to draw some plots to see the relationship between reviews and other variables, since my question is how some factors effect the number of reviews.
 
-```{r include=FALSE}
+```{r echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE,message = FALSE,
 	warning = FALSE)
 #Drop NAs
 final.data<-na.omit(data.clean)
 #Checking NAs
-apply(X=final.data, MARGIN = 2,FUN = function(col) any(is.na(col))) #There is no NAs in data frame.
+#apply(X=final.data, MARGIN = 2,FUN = function(col) any(is.na(col))) #There is no NAs in data frame.
 #Drop duplicated rows
 data1<-final.data %>%
        distinct()
@@ -200,20 +201,17 @@ Figure 3 shows the relationship between rating and the number of reviews. The re
 
 After deleting lost data and duplicated rows, transforming log of column 'Installs' and 'Reviews' (because I found they all have a large scale with a long tale from the histogram plots showed above), I got 7369 observations of 15 variables. But I will choose only several variables to use. Here I only analysis those 'Type' == "Free",which has a larger proportion. 
 
-```{r include=FALSE}
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
 #only with intercept
 model.0<-lmer(log_reviews ~ 1 + (1|Category), data = newdata)
-summary(model.0)
 
 #random intercept, fixed predictor in individual level
 model.1<-lmer(log_reviews ~ Rating + Size + (1|Category), data = newdata)
-summary(model.1)
 
 #run random intercept and slope model
 model.2<-lmer(log_reviews ~ Rating + Size + (1+Rating|Category) + (1+Size|Category) , data = newdata)
-summary(model.2)
 
-anova(model.0,model.1,model.2) # choose 'model.2'
+#anova(model.0,model.1,model.2) # choose 'model.2'
 ```
 
 Considering different categories, I used multilevel model to fit the data. From the EDA part, I found that for the 'log_installs' predictor, the differences between each category was not so significant. So I did not choose 'log_installs' as one of model's predictor.
