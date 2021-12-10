@@ -4,7 +4,6 @@ author: "Tong Sun"
 date: "12/1/2021"
 output: pdf_document
 always_allow_html: true
-
 ---
 
 ```{r setup, include=FALSE, echo=FALSE}
@@ -220,21 +219,8 @@ For different categories, the influence of each predictor is always not the same
 
 ### Model Validation 
 
-```{r echo=FALSE, fig.height=2.5, fig.width=6, fig.cap="Residual plot and Q-Q plot."}
-re <- plot(model.2)
-qq <- qqmath(model.2)
-grid.arrange(re,qq,nrow=1)
-```
-
-```{r echo=FALSE, fig.height=2, fig.width=4, fig.cap="Residuals vs Leverage."}
-ggplot(data.frame(lev=hatvalues(model.2),pearson=residuals(model.2,type="pearson")),
-      aes(x=lev,y=pearson)) +
-    geom_point() +
-    theme_bw()
-```
-
-From the residual plot,in Figure 4, I find that the mean of residuals is almost zero.From the Q-Q plot, I find that most of dots are on the lines so the normality is good. From the leverage plot in Figure 5, we can see that there are not obvious leverage point, except for some points on the right.This refers to the extent to which the coefficients in the regression model would not change if a particular observation was removed from the dataset.
-
+In this part, based on residual checking I discovered the normality of the model is good and there are not obvious point, which means the coefficients in the regression model would not change if a particular observation was removed from the data.
+ 
 # Conclusion
 
 From the estimates above, I would draw the conclusion as follow. The parameters of variables shows that "Rating" and "Size" both have a positive influence on the number of reviews. The higher level from people's rating, which means people who used this app before have more sense about it, they would like to recommend it to others, so they are willing to share their feelings on social platforms. In addition, for the "Size" factor, the larger size the app has, the more probably people will write reviews for it. By default, the reason of it is those apps with larger size may include more information and more utility features, in that case there will be more people downloading and using them. Therefore there will be more reviews of them, but the influence of size is not so significant comparing with rating.
@@ -308,6 +294,19 @@ installs<-data.clean %>%
 ggplot(installs, aes(x="", y=n, fill=Installs.Group))+
   geom_bar(width = 1, stat = "identity")
 ```
+```{r echo=FALSE, fig.height=2.5, fig.width=6, fig.cap="Residual plot and Q-Q plot."}
+re <- plot(model.2)
+qq <- qqmath(model.2)
+grid.arrange(re,qq,nrow=1)
+```
+
+```{r echo=FALSE, fig.height=2, fig.width=4, fig.cap="Residuals vs Leverage."}
+ggplot(data.frame(lev=hatvalues(model.2),pearson=residuals(model.2,type="pearson")),
+      aes(x=lev,y=pearson)) +
+    geom_point() +
+    theme_bw()
+```
+
 
 \newpage
 ### Full Results
