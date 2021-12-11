@@ -2,7 +2,8 @@
 title: "Report of MA678 Midterm Project"
 author: "Tong Sun"
 date: "12/1/2021"
-output: pdf_document
+output: 
+  pdf_document
 always_allow_html: true
 ---
 
@@ -22,12 +23,12 @@ data<-read.csv("googleplaystore.csv")
 ```
 # Abstract
 
-Google Play is the official app store of Android, Google's mobile platform. It allows people to view applications and load of content before downloading anything on their devices. The Play Store apps data has enormous potential to drive app-making businesses to success. But there still are some apps which have majority of reviews with fewer installs. So here a question comes out -- what factors might influence the number of users' reviews ? I used several factors and set up a multilevel model to answer this question, making some suggestions for future app-making businesses. Additionally, it indexed important information about Android apps. The model shows that the number of reviews is slightly different between categories. This report consists 4 main parts: Introduction, Method, Result and Conclusion.
+Google Play is the official app store of Android, Google's mobile platform. It allows people to view applications and load of content before downloading anything on their devices. The Play Store apps data has enormous potential to drive app-making businesses to success. In this report, I explored this question -- what factors might influence the number of users' reviews and how they drive to future app-making businesses probably? Based on setting up a multilevel regression model, I discovered several factors that may make sense, making some suggestions for future app-making businesses at the same time. Additionally, it indexed important information about Android apps. The model shows that the number of reviews is slightly different between categories. This report consists 4 main parts: Introduction, Method, Result and Conclusion.
 
 # Introduction
 
 Google Play indexes important information about Android apps, including ratings, alternative suggestions,user reviews and other descriptions of apps. It uses sophisticated modern-day techniques (like dynamic page load) using JQuery making scraping more challenging. The Play Store apps data has enormous potential to drive app-making businesses to success. Actionable insights can be drawn for developers to work on and capture the Android market! So each app has its own features and some similarities with others as well, such as the number of installs, types and the price of apps. And some features may lead the apps to be more out-standing.
-
+  
 So here I would use multilevel regression to see how different their number of reviews are between each category.Before that, I cleaned the data and added with some new columns to see which factors are more significant.
 
 # Method
@@ -36,7 +37,7 @@ So here I would use multilevel regression to see how different their number of r
 
 The main data set is published on [Kaggle: Google Play Store Dataset](https://www.kaggle.com/lava18/google-play-store-apps).
 
-Firstly I made lots of steps to data cleaning.I checked the types of the data and variables and changed all factor variables to be numeric, eliminating lots of symbols (such as "M"and currency symbol) as well. I replaced or removed all no-info items in each column because they didn't have any practical meaning. And also I changed 'Last Updated' column to date format.
+Firstly I made lots of steps to data cleaning. In order to have a clear format of data, I checked the types of the data and variables and changed all factor variables to be numeric, eliminating lots of symbols (such as "M"and currency symbol) as well. 
 
 ```{r, echo=FALSE,message=FALSE,warning=FALSE}
 #Change factor variables to be numeric.
@@ -225,7 +226,9 @@ In this part, based on residual checking I discovered the normality of the model
 
 From the estimates above, I would draw the conclusion as follow. The parameters of variables shows that "Rating" and "Size" both have a positive influence on the number of reviews. The higher level from people's rating, which means people who used this app before have more sense about it, they would like to recommend it to others, so they are willing to share their feelings on social platforms. In addition, for the "Size" factor, the larger size the app has, the more probably people will write reviews for it. By default, the reason of it is those apps with larger size may include more information and more utility features, in that case there will be more people downloading and using them. Therefore there will be more reviews of them, but the influence of size is not so significant comparing with rating.
 
-For the purpose of giving suggestions for future app-making businesses, I would like to suggest them pay more attention to people's rating factor when they create new apps. Obviously, if the app has higher rating that means people like this production more, probably they will write more reviews on it so this will attract more and more people to use it. And another suggestion is businesses could care about the app's size when they design a new production. For those apps include more utility features, people have to use them so they probably will not care about their sizes so much. But for those apps only for entertainment, if the application occupies a large amount of device memory, people will consider not downloading and using it, or have a high chance to uninstall it after downloading. Of course, there are not many comments on these software, which indicates that these software is not popular.
+In addition, app-making businesses should pay more attention on the creation of entertainment apps because from the distribution of number of reviews by categories, those are at the top. The more comments people make about software, the more social impact it has, and the more likely software developers are to find new ideas from reviews. By default, apps designers should explore apps that are free. Certainly,the importance of this is somewhat diminished for categories of software that people need to use in their daily lives, such as those under the medical category.
+
+For the purpose of giving suggestions for future app-making businesses, I would like to suggest them pay more attention to people's rating factor when they create new apps. Obviously, if the app has higher rating that means people like this production more, probably they will write more reviews on it so this will attract more and more people to use it. And another suggestion is businesses could care about the app's size when they design a new production. For those apps include more utility features, people have to use them so they probably will not care about their sizes so much. But for those apps only for entertainment, if the application occupies a large amount of device memory, people will consider not downloading and using it, or have a high chance to uninstall it after downloading. Of course, there are not many comments on these software, which indicates that these software is not popular. Finally, software developers should take better advantage of the momentum of young people, who are more likely to post reviews on social platforms. The development industry should take advantage of the drive effect while doing what it wants to do to drive adoption of other applications.
 
 \newpage
 ## Appendix
@@ -268,18 +271,18 @@ ggplot(data = newdata)+
 ```
 
 
-![hchart](hchart1.png)
-![hchart](hchart2.png)
+![hchart](hchart1.png){width=50%}
+![hchart](hchart2.png){width=50%}
 
-![hchart](hchart3.png)
+![hchart](hchart3.png){width=50%}
 
-![hchart](hchart4.png)
-![hchart](hchart5.png)
-![hchart](hchart6.png)
-![hchart](hchart7.png)
-![hchart](hchart8.png)
-![hchart](hchart9.png)
-![hchart](hchart10.png)
+![hchart](hchart4.png){width=50%}
+![hchart](hchart5.png){width=50%}
+![hchart](hchart6.png){width=50%}
+![hchart](hchart7.png){width=50%}
+![hchart](hchart8.png){width=50%}
+![hchart](hchart9.png){width=50%}
+![hchart](hchart10.png){width=50%}
 
 ```{r echo=FALSE, fig.cap="Bar chart for installs in group"}
 #divide the range of 'Installs' by groups of 10k
@@ -328,6 +331,6 @@ coef(model.2)
 
 Confidence intervals for both fixed and random effects
 ```{r echo=FALSE}
-#confint.merMod(object = model.2, method = "boot")
+confint.merMod(object = model.2, method = "boot")
 ```
 
