@@ -19,6 +19,7 @@ library(lattice)
 library(gridExtra)
 library(arm)
 library(ggpubr)
+library(visreg)
 data<-read.csv("googleplaystore.csv")
 ```
 # Abstract
@@ -191,6 +192,12 @@ model.2<-lmer(log_reviews ~ Rating + Size + (1+Rating|Category) + (1+Size|Catego
 ```
 
 Considering different categories, I used multilevel model to fit the data. From the EDA part, I found that for the 'log_installs' predictor, the differences between each category was not so significant. So I did not choose 'log_installs' as one of model's predictor. Here I chose continuous variables -- 'Size' and 'Rating' as model's predictors. From EDA part above, I guessed that for 'Size' and 'Rating' predictors, it should be random intercept and random slope model. To be more convinced, I still did three different models and used anova for model selecting (choosing the one has the smallest AIC, model.2 shown as follow). 
+
+```{r echo=FALSE, fig.height=4, fig.width=10, fig.cap="How the expected value of the y(Reviews) changes as a function of x,with all other variables held fixed." }
+par(mfrow=c(1,2))
+visreg(model.2,"Rating", ylab = "number of reviews")
+visreg(model.2,"Size", ylab = "number of reviews")
+```
 
 To see the fixed effects below:
 
